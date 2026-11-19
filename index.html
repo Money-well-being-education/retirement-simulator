@@ -33,12 +33,6 @@ input,select{width:100%;font-size:18px;padding:13px;border:1px solid #ccd8d2;bor
 </header>
 
 <main>
-<div style="text-align:center;margin-bottom:20px">
-<button type="button" onclick="document.querySelector('.result').scrollIntoView({behavior:'smooth'})"
-style="width:100%;padding:18px;background:#176b55;color:white;border:0;border-radius:12px;font-size:20px;font-weight:bold;cursor:pointer">
-📊 診断結果を見る
-</button>
-</div>
 <section class="card">
 <h2>① あなたの基本情報</h2>
 <div class="grid">
@@ -57,7 +51,12 @@ style="width:100%;padding:18px;background:#176b55;color:white;border:0;border-ra
 <label>年金の手取り見込み額（世帯合計・月額・万円）</label>
 <input id="pension" type="number" value="20" min="0">
 </section>
-
+<div style="text-align:center;margin-bottom:20px">
+<button type="button" onclick="document.querySelector('.result').scrollIntoView({behavior:'smooth'})"
+style="width:100%;padding:18px;background:#176b55;color:white;border:0;border-radius:12px;font-size:20px;font-weight:bold;cursor:pointer">
+📊 診断結果を見る
+</button>
+</div>
 <section class="card">
 <h2>③ 今の資産づくり</h2>
 <label>老後用の貯蓄・運用資産（万円）</label>
