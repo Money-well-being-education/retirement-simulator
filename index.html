@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>老後資金シミュレーター</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f8f7;color:#24352f;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+header{background:#176b55;color:white;padding:28px 20px;text-align:center}
+h1{font-size:25px;margin:0 0 10px}
+header p{font-size:14px;margin:0}
+main{max-width:650px;margin:auto;padding:16px}
+.card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 10px #0000000b}
+h2{font-size:19px;margin:0 0 18px}
+label{display:block;font-size:14px;font-weight:bold;margin:15px 0 6px}
+input,select{width:100%;font-size:18px;padding:13px;border:1px solid #ccd8d2;border-radius:10px;background:white}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.result{background:#e6f3ed;border:2px solid #176b55}
+.big{font-size:30px;font-weight:bold;color:#176b55;overflow-wrap:anywhere}
+.row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #ddd}
+.row strong{text-align:right}
+.note{font-size:12px;color:#65746d;line-height:1.8}
+.warning{color:#b44435}
+.good{color:#176b55}
+</style>
+</head>
+<body>
+
+<header>
+<h1>💰 わが家の老後資金診断</h1>
+<p>今の準備で、老後のお金は足りる？</p>
+</header>
+
+<main>
+
+<section class="card">
+<h2>① あなたの基本情報</h2>
+<div class="grid">
+<div><label>現在の年齢</label><input id="age" type="number" value="45" min="18" max="100"></div>
+<div><label>退職予定年齢</label><input id="retire" type="number" value="65" min="40" max="100"></div>
+<div><label>何歳まで試算？</label><input id="end" type="number" value="90" min="65" max="110"></div>
+<div><label>世帯タイプ</label>
+<select id="family"><option>夫婦2人</option><option>1人暮らし</option></select></div>
+</div>
+</section>
+
+<section class="card">
+<h2>② 老後の暮らし</h2>
+<label>老後の生活費（月額・万円）</label>
+<input id="expense" type="number" value="30" min="0">
+<label>年金の手取り見込み額（世帯合計・月額・万円）</label>
+<input id="pension" type="number" value="20" min="0">
+</section>
+
+<section class="card">
+<h2>③ 今の資産づくり</h2>
+<label>老後用の貯蓄・運用資産（万円）</label>
+<input id="savings" type="number" value="500" min="0">
+<label>毎月の積立額（万円）</label>
+<input id="monthly" type="number" value="5" min="0">
+<label>退職までの想定運用利回り（年率）</label>
+<select id="rate">
+<option value="0">0％（運用なし）</option>
+<option value="2">2％</option>
+<option value="3" selected>3％</option>
+<option value="5">5％</option>
+</select>
+</section>
+
+<section class="card result">
+<h2>📊 あなたの診断結果</h2>
+<p id="error" class="warning"></p>
+<div id="results">
+<div class="row"><span>退職までの期間</span><strong id="years"></strong></div>
+<div class="row"><span>毎月の生活費不足額</span><strong id="monthlygap"></strong></div>
+<div class="row"><span>老後に必要な資金</span><strong id="need"></strong></div>
+<div class="row"><span>退職時の予想資産</span><strong id="assets"></strong></div>
+<p>老後資金の診断</p>
+<div class="big" id="gap"></div>
+<p id="message"></p>
+<p id="extra"></p>
+</div>
+</section>
+
+<section class="card">
+<h2>💡 この結果について</h2>
+<p class="note">
+数字を変更すると診断結果が自動更新されます。<br>
+この試算は、年金を退職時から受給し、生活費・年金額が一定と仮定した簡易モデルです。
+退職後の運用益、物価上昇、税金、手数料、退職金、医療・介護費などは含みません。
+想定利回りは将来の成果を保証するものではありません。
+</p>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+function el(id){return document.getElementById(id);}
+function yen(n){return Math.round(n).toLocaleString("ja-JP")+"万円";}
+function calc(){
+var ids=["age","retire","end","expense","pension","savings","monthly","rate"];
+var v={};
+for(var i=0;i<ids.length;i++){
+ var field=el(ids[i]);
+ if(field.value.trim()===""){showError("すべての数字を入力してください");return;}
+ v[ids[i]]=Number(field.value);
+ if(!Number.isFinite(v[ids[i]])||v[ids[i]]<0||v[ids[i]]>100000){
+  showError("入力した数字を確認してください");return;
+ }
+}
+if(v.age<18||v.age>100||v.retire<v.age||v.retire>100||v.end<=v.retire||v.end>110){
+ showError("年齢の設定を確認してください");return;
+}
+el("error").textContent="";
+el("results").style.display="block";
+var months=(v.retire-v.age)*12;
+var r=v.rate/1200;
+var factor=r===0?months:(Math.pow(1+r,months)-1)/r;
+var assets=v.savings*Math.pow(1+r,months)+v.monthly*factor;
+var monthlygap=Math.max(0,v.expense-v.pension);
+var need=monthlygap*12*(v.end-v.retire);
+var gap=need-assets;
+el("years").textContent=(v.retire-v.age)+"年";
+el("monthlygap").textContent=yen(monthlygap);
+el("need").textContent=yen(need);
+el("assets").textContent=yen(assets);
+el("gap").textContent=gap>0?"約"+yen(gap)+"不足":"約"+yen(-gap)+"の余裕";
+el("gap").className="big "+(gap>0?"warning":"good");
+el("message").textContent=gap>0?
+"現在の条件では老後資金が不足する可能性があります。":
+"現在の条件では老後資金を賄える試算です。";
+if(gap>0&&months>0){
+ el("extra").textContent="同じ利回りで退職まで積み立てる場合、追加で毎月約"+yen(gap/factor)+"の積立が目安です。";
+}else if(gap>0){
+ el("extra").textContent="退職までの積立期間がないため、生活費や退職時期などの見直しが必要です。";
+}else{
+ el("extra").textContent="物価上昇や医療・介護費なども考慮して準備しましょう。";
+}
+}
+function showError(msg){
+ el("error").textContent=msg;
+ el("results").style.display="none";
+}
+var fields=document.querySelectorAll("input,select");
+for(var i=0;i<fields.length;i++){
+ fields[i].addEventListener("input",calc);
+ fields[i].addEventListener("change",calc);
+}
+calc();
+})();
+</script>
+</body>
+</html>
